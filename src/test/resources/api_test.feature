@@ -53,15 +53,18 @@ Feature: Testing of DemoQA Bookstore API
     And the response body should have key "message" with value "UserName and Password required."
 
 
-Scenario: Successful GET request to AccountV1UserByUserIdGet
+  Scenario: Successful GET request to AccountV1UserByUserIdGet
     Given I have a valid userId
+    And I have a valid authentication token
     When I make a GET request to "/Account/v1/User/{userId}"
     Then the response status code should be 200
-    And the response body should have key "userId" with a value
-    And the response body should have key "username" with a value
-    And the response body should have key "books" with a value
+    And the response body should have key "userId" with userId
+    And the response body should have key "username" with username
+    And the response body should have key "books" with 0 items
 
-Scenario: Unsuccessful GET request to AccountV1UserByUserIdGet with invalid userId
-    Given I have an invalid userId
+  Scenario: Unsuccessful GET request to AccountV1UserByUserIdGet with no authentication token
+    Given I have a valid userId
     When I make a GET request to "/Account/v1/User/{userId}"
     Then the response status code should be 401
+    And the response body should have key "code" with value "1200"
+    And the response body should have key "message" with value "User not authorized!"

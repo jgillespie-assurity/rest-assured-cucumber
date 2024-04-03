@@ -60,6 +60,42 @@ public class ApiTestSteps {
         requestHeader.put("token", response.jsonPath().getString("token"));
     }
 
+    @Given("the bookstore has no books")
+    public void theBookstoreHasNoBooks() {
+        // This step might require additional setup, such as clearing the bookstore before the test or mocking the API response to simulate a situation where the bookstore has no books.
+        // For example, if there is an endpoint to delete all books:
+        RequestSpecification request = RestAssured.given()
+                .header("Content-Type", "application/json");
+        if (requestHeader.has("token")) {
+            request.auth().oauth2(requestHeader.getString("token"));
+        }
+        response = request.delete(rootUrl + "/BookStore/v1/Books");
+        assertThat(response.getStatusCode(), is(204));
+    }
+
+    @Given("I put a valid book in the body")
+    public void iPutAValidBookInTheBody() {
+        JSONObject book = new JSONObject();
+        book.put("title", "A valid book title");
+        book.put("author", "A valid author name");
+        requestBody.put("book", book);
+    }
+
+    @Given("the book already exists in the bookstore")
+    public void theBookAlreadyExistsInTheBookstore() {
+        // This step might require additional setup, such as creating a book object and adding it to the bookstore before the test or mocking the API response to simulate a situation where the book already exists.
+    }
+
+    @Given("a book exists in the bookstore")
+    public void aBookExistsInTheBookstore() {
+        // This step might require additional setup, such as creating a book object and adding it to the bookstore before the test or mocking the API response to simulate a situation where the book exists.
+    }
+
+    @Given("a book with ISBN exists in the bookstore")
+    public void aBookWithISBNExistsInTheBookstore() {
+        // This step might require additional setup, such as creating a book object and adding it to the bookstore before the test or mocking the API response to simulate a situation where the book exists.
+    }
+
     @When("I make a POST request to {string}")
     public void iMakeAPostRequestTo(String url) {
         RequestSpecification request = RestAssured.given()
@@ -79,6 +115,33 @@ public class ApiTestSteps {
             request.pathParam("userId", requestHeader.getString("userId"));
         }
         response = request.get(rootUrl + url);
+    }
+
+    @When("I make a PUT request to {string}")
+    public void iMakeAPUTRequestTo(String url) {
+        RequestSpecification request = RestAssured.given()
+                .header("Content-Type", "application/json")
+                .body(requestBody.toString());
+        if (requestHeader.has("token")) {
+            request.auth().oauth2(requestHeader.getString("token"));
+        }
+        if (requestHeader.has("ISBN")) {
+            request.pathParam("ISBN", requestHeader.getString("ISBN"));
+        }
+        response = request.put(rootUrl + url);
+    }
+
+    @When("I make a DELETE request to {string}")
+    public void iMakeADELETERequestTo(String url) {
+        RequestSpecification request = RestAssured.given()
+                .header("Content-Type", "application/json");
+        if (requestHeader.has("token")) {
+            request.auth().oauth2(requestHeader.getString("token"));
+        }
+        if (requestHeader.has("ISBN")) {
+            request.pathParam("ISBN", requestHeader.getString("ISBN"));
+        }
+        response = request.delete(rootUrl + url);
     }
 
     @Then("the response status code should be {int}")
@@ -120,4 +183,10 @@ public class ApiTestSteps {
     public void theResponseBodyShouldHaveKeyWithItems(String key, int itemCount) {
         assertThat(response.jsonPath().getList(key).size(), is(itemCount));
     }
+
+    @Then("the response body should have key {string} with more than {int} items")
+    public void theResponseBodyShouldHaveKeyWithMoreThanItems(String key, int itemCount) {
+        assertThat(response.jsonPath().getList(key).size(), greaterThan(itemCount));
+    }
+
 }

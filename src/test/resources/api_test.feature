@@ -52,6 +52,8 @@ Feature: Testing of DemoQA Bookstore API
     And the response body should have key "code" with value "1200"
     And the response body should have key "message" with value "UserName and Password required."
 
+# TODO: Add tests for /Account/v1/User POST
+# TODO: Add tests for /Account/v1/User/{userId} DELETE
 
   Scenario: Successful GET request to AccountV1UserByUserIdGet
     Given I have a valid userId
@@ -68,3 +70,93 @@ Feature: Testing of DemoQA Bookstore API
     Then the response status code should be 401
     And the response body should have key "code" with value "1200"
     And the response body should have key "message" with value "User not authorized!"
+
+
+  Scenario: Successful GET request to BookStoreV1BooksGet
+    When I make a GET request to "/BookStore/v1/Books"
+    Then the response status code should be 200
+    And the response body should have key "books" with more than 0 items
+
+  Scenario: Unsuccessful GET request to BookStoreV1BooksGet when no books are found
+    Given the bookstore has no books
+    When I make a GET request to "/BookStore/v1/Books"
+    Then the response status code should be 404
+    And the response body should have key "code" with value "1207"
+    And the response body should have key "message" with value "Books not found!"
+
+
+  Scenario: Successful POST request to BookStoreV1BooksPost
+    Given I have a valid authentication token
+    And I put a valid book in the body
+    When I make a POST request to "/BookStore/v1/Books"
+    Then the response status code should be 201
+    And the response body should have key "bookId" with a value
+
+  Scenario: Unsuccessful POST request to BookStoreV1BooksPost when book already exists
+    Given I have a valid authentication token
+    And I put a valid book in the body
+    And the book already exists in the bookstore
+    When I make a POST request to "/BookStore/v1/Books"
+    Then the response status code should be 400
+    And the response body should have key "code" with value "1200"
+    And the response body should have key "message" with value "Book already exists!"
+
+
+  Scenario: Successful DELETE request to BookStoreV1BooksDelete
+    Given I have a valid authentication token
+    And a book exists in the bookstore
+    When I make a DELETE request to "/BookStore/v1/Books/{bookId}"
+    Then the response status code should be 204
+
+  Scenario: Unsuccessful DELETE request to BookStoreV1BooksDelete when book does not exist
+    Given I have a valid authentication token
+    When I make a DELETE request to "/BookStore/v1/Books/{bookId}"
+    Then the response status code should be 404
+    And the response body should have key "code" with value "1205"
+    And the response body should have key "message" with value "Book not found!"
+
+
+  Scenario: Successful GET request to BookStoreV1BookGet
+    Given I have a valid authentication token
+    And a book with ISBN exists in the bookstore
+    When I make a GET request to "/BookStore/v1/Books/{ISBN}"
+    Then the response status code should be 200
+    And the response body should have key "book" with a value
+
+  Scenario: Unsuccessful GET request to BookStoreV1BookGet when book does not exist
+    Given I have a valid authentication token
+    When I make a GET request to "/BookStore/v1/Books/{ISBN}"
+    Then the response status code should be 404
+    And the response body should have key "code" with value "1205"
+    And the response body should have key "message" with value "Book not found!"
+
+
+  Scenario: Successful DELETE request to BookStoreV1BookDelete
+    Given I have a valid authentication token
+    And a book with ISBN exists in the bookstore
+    When I make a DELETE request to "/BookStore/v1/Books/{ISBN}"
+    Then the response status code should be 204
+
+  Scenario: Unsuccessful DELETE request to BookStoreV1BookDelete when book does not exist
+    Given I have a valid authentication token
+    When I make a DELETE request to "/BookStore/v1/Books/{ISBN}"
+    Then the response status code should be 404
+    And the response body should have key "code" with value "1205"
+    And the response body should have key "message" with value "Book not found!"
+
+
+  Scenario: Successful PUT request to BookStoreV1BooksByISBNPut
+    Given I have a valid authentication token
+    And a book with ISBN exists in the bookstore
+    And I put a valid book in the body
+    When I make a PUT request to "/BookStore/v1/Books/{ISBN}"
+    Then the response status code should be 200
+    And the response body should have key "book" with a value
+
+  Scenario: Unsuccessful PUT request to BookStoreV1BooksByISBNPut when book does not exist
+    Given I have a valid authentication token
+    And I put a valid book in the body
+    When I make a PUT request to "/BookStore/v1/Books/{ISBN}"
+    Then the response status code should be 404
+    And the response body should have key "code" with value "1205"
+    And the response body should have key "message" with value "Book not found!"

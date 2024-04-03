@@ -24,22 +24,27 @@ Feature: Testing of DemoQA Bookstore API
     And the response body should have key "message" with value "UserName and Password required."
 
 
-  Scenario: Successful POST request to GenerateToken
+  Scenario: Successful POST request to AccountV1GenerateToken
     Given I put a valid username in the body
     And I put a valid password in the body
     When I make a POST request to "/Account/v1/GenerateToken"
     Then the response status code should be 200
-    And the response body should have key "token"
+    And the response body should have key "token" with a value
+    And the response body should have key "expires" with a value
+    And the response body should have key "status" with value "Success"
+    And the response body should have key "result" with value "User authorized successfully."
 
-  Scenario: Unsuccessful POST request to GenerateToken with incorrect user details
+  Scenario: Unsuccessful POST request to AccountV1GenerateToken with incorrect user details
     Given I put a valid username in the body
     And I put an invalid password in the body
     When I make a POST request to "/Account/v1/GenerateToken"
-    Then the response status code should be 404
-    And the response body should have key "code" with value "1207"
-    And the response body should have key "message" with value "User not found!"
+    Then the response status code should be 200
+    And the response body should have key "token" with no value
+    And the response body should have key "expires" with no value
+    And the response body should have key "status" with value "Failed"
+    And the response body should have key "result" with value "User authorization failed."
 
-  Scenario: Bad POST request to GenerateToken with invalid body
+  Scenario: Bad POST request to AccountV1GenerateToken with invalid body
     Given I put a valid username in an invalid body
     And I put a valid password in the body
     When I make a POST request to "/Account/v1/GenerateToken"

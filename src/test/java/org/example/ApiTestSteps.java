@@ -12,18 +12,22 @@ import static org.junit.Assert.assertEquals;
 
 public class ApiTestSteps {
     private final String rootUrl = "https://demoqa.com";
+
+    private final DotEnv dotEnv = new DotEnv();
+    private final String username = dotEnv.get("USERNAME");
+    private final String password = dotEnv.get("PASSWORD");
+
     private Response response;
-    private RequestSpecification request;
     private JSONObject requestBody = new JSONObject();
 
     @Given("I put a valid username in the body")
     public void iPutAValidUsernameInTheBody() {
-        requestBody.put("username", "validUsername");
+        requestBody.put("userName", username);
     }
 
     @Given("I put a valid password in the body")
     public void iPutAValidPasswordInTheBody() {
-        requestBody.put("password", "validPassword");
+        requestBody.put("password", password);
     }
 
     @Given("I put an invalid password in the body")
@@ -34,12 +38,14 @@ public class ApiTestSteps {
     @Given("I put a valid username in an invalid body")
     public void iPutAValidUsernameInAnInvalidBody() {
         requestBody = new JSONObject();
-        requestBody.put("invalidKey", "validUsername");
+        requestBody.put("invalidKey", username);
     }
 
     @When("I make a POST request to {string}")
     public void iMakeAPostRequestTo(String url) {
-        request = RestAssured.given().body(requestBody.toString());
+        RequestSpecification request = RestAssured.given()
+                .header("Content-Type", "application/json")
+                .body(requestBody.toString());
         response = request.post(rootUrl + url);
     }
 

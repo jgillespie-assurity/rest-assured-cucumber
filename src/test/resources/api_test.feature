@@ -11,7 +11,7 @@ Feature: Testing of DemoQA Bookstore API
     Given I put a valid username in the body
     And I put an invalid password in the body
     When I make a POST request to "/Account/v1/Authorized"
-    Then the response status code should be 401
+    Then the response status code should be 404
     And the response body should have key "code" with value "1207"
     And the response body should have key "message" with value "User not found!"
 

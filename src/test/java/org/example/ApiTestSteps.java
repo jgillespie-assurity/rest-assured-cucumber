@@ -6,32 +6,40 @@ import io.cucumber.java.en.When;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import org.json.JSONObject;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class ApiTestSteps {
     private final String rootUrl = "https://demoqa.com";
     private Response response;
     private RequestSpecification request;
+    private JSONObject requestBody = new JSONObject();
 
-    @Given("I am authorized")
-    public void iAmAuthorized() {
-        request = RestAssured.given().auth().preemptive().basic("username", "password");
+    @Given("I put a valid username in the body")
+    public void iPutAValidUsernameInTheBody() {
+        requestBody.put("username", "validUsername");
     }
 
-    @Given("I am not authorized")
-    public void iAmNotAuthorized() {
-        request = RestAssured.given();
+    @Given("I put a valid password in the body")
+    public void iPutAValidPasswordInTheBody() {
+        requestBody.put("password", "validPassword");
     }
 
-    @Given("I have an invalid body for the request")
-    public void iHaveAnInvalidBodyForTheRequest() {
-        request.body("invalid body");
+    @Given("I put an invalid password in the body")
+    public void iPutAnInvalidPasswordInTheBody() {
+        requestBody.put("password", "invalidPassword");
+    }
+
+    @Given("I put a valid username in an invalid body")
+    public void iPutAValidUsernameInAnInvalidBody() {
+        requestBody = new JSONObject();
+        requestBody.put("invalidKey", "validUsername");
     }
 
     @When("I make a POST request to {string}")
     public void iMakeAPostRequestTo(String url) {
+        request = RestAssured.given().body(requestBody.toString());
         response = request.post(rootUrl + url);
     }
 
@@ -40,10 +48,13 @@ public class ApiTestSteps {
         assertEquals(statusCode, response.getStatusCode());
     }
 
-    @Then("the response body should contain the expected data")
-    public void theResponseBodyShouldContainTheExpectedData() {
-        // This is a placeholder. You should replace this with the actual assertion
-        // that checks the response body contains the expected data.
-        assertTrue(response.getBody().asString().contains("expected data"));
+    @Then("the response body should be {string}")
+    public void theResponseBodyShouldBe(String expectedBody) {
+        assertEquals(expectedBody, response.getBody().asString());
+    }
+
+    @Then("the response body should have key {string} with value {string}")
+    public void theResponseBodyShouldHaveKeyWithValue(String key, String value) {
+        assertEquals(value, response.jsonPath().getString(key));
     }
 }

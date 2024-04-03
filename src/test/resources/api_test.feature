@@ -1,18 +1,24 @@
 Feature: Testing of DemoQA Bookstore API
 
   Scenario: Successful POST request to AccountV1AuthorizedPost
-    Given I am authorized
+    Given I put a valid username in the body
+    And I put a valid password in the body
     When I make a POST request to "/Account/v1/Authorized"
     Then the response status code should be 200
-    And the response body should contain the expected data
+    And the response body should be "true"
 
-  Scenario: Unsuccessful POST request to AccountV1AuthorizedPost with unauthorized user
-    Given I am not authorized
+  Scenario: Unsuccessful POST request to AccountV1AuthorizedPost with incorrect user details
+    Given I put a valid username in the body
+    And I put an invalid password in the body
     When I make a POST request to "/Account/v1/Authorized"
     Then the response status code should be 401
+    And the response body should have key "code" with value "1207"
+    And the response body should have key "message" with value "User not found!"
 
 Scenario: Bad POST request to AccountV1AuthorizedPost with invalid body
-  Given I am authorized
-  And I have an invalid body for the request
+  Given I put a valid username in an invalid body
+  And I put a valid password in the body
   When I make a POST request to "/Account/v1/Authorized"
   Then the response status code should be 400
+  And the response body should have key "code" with value "1200"
+  And the response body should have key "message" with value "UserName and Password required."

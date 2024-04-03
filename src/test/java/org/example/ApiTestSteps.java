@@ -6,6 +6,8 @@ import io.cucumber.java.en.When;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import org.json.JSONObject;
 
 import static org.junit.Assert.assertEquals;
@@ -62,5 +64,10 @@ public class ApiTestSteps {
     @Then("the response body should have key {string} with value {string}")
     public void theResponseBodyShouldHaveKeyWithValue(String key, String value) {
         assertEquals(value, response.jsonPath().getString(key));
+    }
+
+    @Then("the response body should have key {string}")
+    public void theResponseBodyShouldHaveKey(String key) {
+        assertThat(response.jsonPath().get(key), notNullValue());
     }
 }

@@ -51,3 +51,17 @@ Feature: Testing of DemoQA Bookstore API
     Then the response status code should be 400
     And the response body should have key "code" with value "1200"
     And the response body should have key "message" with value "UserName and Password required."
+
+
+Scenario: Successful GET request to AccountV1UserByUserIdGet
+    Given I have a valid userId
+    When I make a GET request to "/Account/v1/User/{userId}"
+    Then the response status code should be 200
+    And the response body should have key "userId" with a value
+    And the response body should have key "username" with a value
+    And the response body should have key "books" with a value
+
+Scenario: Unsuccessful GET request to AccountV1UserByUserIdGet with invalid userId
+    Given I have an invalid userId
+    When I make a GET request to "/Account/v1/User/{userId}"
+    Then the response status code should be 401

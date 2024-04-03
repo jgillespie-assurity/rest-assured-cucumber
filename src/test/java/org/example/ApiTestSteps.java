@@ -42,12 +42,32 @@ public class ApiTestSteps {
         requestBody.put("invalidKey", username);
     }
 
+    @Given("I have a valid userId")
+    public void iHaveAValidUserId() {
+        // replace with a valid userId
+        requestBody.put("userId", "validUserId");
+    }
+
+    @Given("I have an invalid userId")
+    public void iHaveAnInvalidUserId() {
+        // replace with a invalid userId
+        requestBody.put("userId", "validUserId");
+    }
+
     @When("I make a POST request to {string}")
     public void iMakeAPostRequestTo(String url) {
         RequestSpecification request = RestAssured.given()
                 .header("Content-Type", "application/json")
                 .body(requestBody.toString());
         response = request.post(rootUrl + url);
+    }
+
+    @When("I make a GET request to {string}")
+    public void iMakeAGETRequestTo(String url) {
+        RequestSpecification request = RestAssured.given()
+                .header("Content-Type", "application/json")
+                .pathParam("userId", requestBody.getString("userId"));
+        response = request.get(rootUrl + url);
     }
 
     @Then("the response status code should be {int}")

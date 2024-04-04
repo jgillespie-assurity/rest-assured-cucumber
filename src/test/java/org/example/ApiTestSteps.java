@@ -27,7 +27,7 @@ public class ApiTestSteps {
     private final JSONObject requestHeader = new JSONObject();
     private final JSONObject requestBody = new JSONObject();
 
-    private final String tempUserName = "jg93531216_test";
+    private final String tempUserName = dotEnv.get("TEMP_USERNAME");
     private String tempUserId;
     private String addedBookISBN;
 

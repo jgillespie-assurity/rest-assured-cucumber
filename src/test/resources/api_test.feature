@@ -52,8 +52,57 @@ Feature: Testing of DemoQA Bookstore API
     And the response body should have key "code" with value "1200"
     And the response body should have key "message" with value "UserName and Password required."
 
-# TODO: Add tests for /Account/v1/User POST
-# TODO: Add tests for /Account/v1/User/{userId} DELETE
+
+  Scenario: Successful POST request to AccountV1UserPost
+    Given I put a temp username in the body
+    And I put a valid password in the body
+    When I make a POST request to "/Account/v1/User"
+    Then the response status code should be 201
+    And the account is created
+    And the response body should have key "userID" with a value
+    And the response body should have key "username" with temp username
+    And the response body should have key "books" with 0 items
+
+  Scenario: Unsuccessful POST request to AccountV1UserPost with existing username
+    Given I put a valid username in the body
+    And I put a valid password in the body
+    When I make a POST request to "/Account/v1/User"
+    Then the response status code should be 406
+    And the response body should have key "code" with value "1204"
+    And the response body should have key "message" with value "User exists!"
+
+  Scenario: Unsuccessful POST request to AccountV1UserPost with invalid body
+    Given I put a valid username in an invalid body
+    And I put a valid password in the body
+    When I make a POST request to "/Account/v1/User"
+    Then the response status code should be 400
+    And the response body should have key "code" with value "1200"
+    And the response body should have key "message" with value "UserName and Password required."
+
+  Scenario: Unsuccessful POST request to AccountV1UserPost with weak password
+    Given I put a temp username in the body
+    And I put the key "password" with value "password" in the body
+    When I make a POST request to "/Account/v1/User"
+    Then the response status code should be 400
+    And the response body should have key "code" with value "1300"
+    And the response body should have key "message" with value "Passwords must have at least one non alphanumeric character, one digit ('0'-'9'), one uppercase ('A'-'Z'), one lowercase ('a'-'z'), one special character and Password must be eight characters or longer."
+
+
+  Scenario: Successful DELETE request to AccountV1UserByUserIdDelete
+    Given the temp account exists
+    And I have a temp userId
+    And I have a temp authentication token
+    When I make a DELETE request to "/Account/v1/User/{userId}"
+    Then the response status code should be 204
+    And the account is deleted
+
+  Scenario: Unsuccessful DELETE request to AccountV1UserByUserIdDelete with no authentication token
+    Given I have a valid userId
+    When I make a DELETE request to "/Account/v1/User/{userId}"
+    Then the response status code should be 401
+    And the response body should have key "code" with value "1200"
+    And the response body should have key "message" with value "User not authorized!"
+
 
   Scenario: Successful GET request to AccountV1UserByUserIdGet
     Given I have a valid userId

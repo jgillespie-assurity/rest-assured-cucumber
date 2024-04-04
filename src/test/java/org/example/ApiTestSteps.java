@@ -16,39 +16,47 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 public class ApiTestSteps {
-    private final String rootUrl = "https://demoqa.com";
+    private static final String rootUrl = "https://demoqa.com";
 
-    private final DotEnv dotEnv = new DotEnv();
+    private static final DotEnv dotEnv = new DotEnv();
     private final String username = dotEnv.get("USERNAME");
-    private final String password = dotEnv.get("PASSWORD");
+    private static final String password = dotEnv.get("PASSWORD");
     private final String userId = dotEnv.get("USER_ID");
 
     private Response response;
     private final JSONObject requestHeader = new JSONObject();
     private final JSONObject requestBody = new JSONObject();
 
+    private final String tempUserName = "jg93531216_test";
+    private String tempUserId;
     private String addedBookISBN;
 
     @After
     public void cleanup() {
-        // If token doesn't exist, call to API in test and call to API in cleanup will fail but the item wasn't added
-        // anyway so nothing to clean up.
-        String token = "";
-        if (requestHeader.has("token")) {
-            token = requestHeader.getString("token");
-        }
-
         // If a book was added during the test, remove all books
         if (addedBookISBN != null) {
             RestAssured.given()
                     .header("Content-Type", "application/json")
-                    .auth().oauth2(token)
+                    .auth().oauth2(getToken(username, password))
                     .pathParam("userId", userId)
                     .delete(rootUrl + "/BookStore/v1/Books?UserId={userId}");
+
+            addedBookISBN = null;
+        }
+
+        // If temp user was created during the test, delete it
+        if (tempUserId != null) {
+            RestAssured.given()
+                    .header("Content-Type", "application/json")
+                    .auth().oauth2(getToken(tempUserName, password))
+                    .pathParam("userId", tempUserId)
+                    .delete(rootUrl + "/Account/v1/User/{userId}");
+
+            tempUserId = null;
         }
     }
 
-    public String getToken() {
+    public static String getToken(String username, String password) {
         Response response = RestAssured.given()
                 .header("Content-Type", "application/json")
                 .body(new JSONObject()
@@ -84,14 +92,46 @@ public class ApiTestSteps {
         requestHeader.put("userId", userId);
     }
 
+    @Given("I have a temp userId")
+    public void iHaveAUserId() {
+        requestHeader.put("userId", tempUserId);
+    }
+
     @Given("I have a valid authentication token")
     public void iHaveAValidAuthenticationToken() {
-        requestHeader.put("token", getToken());
+        requestHeader.put("token", getToken(username, password));
+    }
+
+    @Given("I have a temp authentication token")
+    public void iHaveATempAuthenticationToken() {
+        requestHeader.put("token", getToken(tempUserName, password));
     }
 
     @Given("I put a valid userId in the body")
     public void iPutAValidUserIdInTheBody() {
         requestBody.put("userId", userId);
+    }
+
+    @Given("I put a temp username in the body")
+    public void iPutATempUsernameInTheBody() {
+        requestBody.put("userName", tempUserName);
+    }
+
+    @Given("I put the key {string} with value {string} in the body")
+    public void iPutTheKeyWithValueInTheBody(String key, String value) {
+        requestBody.put(key, value);
+    }
+
+    @Given("the temp account exists")
+    public void theTestAccountExists() {
+        Response response = RestAssured.given()
+                .header("Content-Type", "application/json")
+                .body(new JSONObject()
+                        .put("userName", tempUserName)
+                        .put("password", password).toString())
+                .post(rootUrl + "/Account/v1/User/");
+
+        tempUserId = response.jsonPath().getString("userID");
     }
 
     @Given("I put a book collection in the body with ISBN {string}")
@@ -117,7 +157,7 @@ public class ApiTestSteps {
         if (requestHeader.has("token")) {
             token = requestHeader.getString("token");
         } else {
-            token = getToken();
+            token = getToken(username, password);
         }
 
         List<JSONObject> collectionOfIsbns = new ArrayList<>();
@@ -140,6 +180,9 @@ public class ApiTestSteps {
     @Given("I put a book in the body with ISBN {string}")
     public void iPutABookInTheBodyWithIsbn(String isbn) {
         requestBody.put("isbn", isbn);
+
+        // Store the ISBN of the added book for cleanup
+        addedBookISBN = isbn;
     }
 
     @When("I make a POST request to {string}")
@@ -232,6 +275,11 @@ public class ApiTestSteps {
         theResponseBodyShouldHaveKeyWithValue(key, username);
     }
 
+    @Then("the response body should have key {string} with temp username")
+    public void theResponseBodyShouldHaveKeyWithTempUsername(String key) {
+        theResponseBodyShouldHaveKeyWithValue(key, tempUserName);
+    }
+
     @Then("the response body should have key {string} with {int} items")
     public void theResponseBodyShouldHaveKeyWithItems(String key, int itemCount) {
         assertThat(response.jsonPath().getList(key).size(), is(itemCount));
@@ -240,6 +288,16 @@ public class ApiTestSteps {
     @Then("the response body should have key {string} with more than {int} items")
     public void theResponseBodyShouldHaveKeyWithMoreThanItems(String key, int itemCount) {
         assertThat(response.jsonPath().getList(key).size(), greaterThan(itemCount));
+    }
+
+    @Then("the account is created")
+    public void theAccountIsCreated() {
+        tempUserId = response.jsonPath().getString("userID");
+    }
+
+    @Then("the account is deleted")
+    public void theAccountIsDeleted() {
+        tempUserId = null;
     }
 
 }

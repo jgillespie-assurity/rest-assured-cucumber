@@ -1,5 +1,6 @@
 package org.example;
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -7,6 +8,9 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -22,6 +26,38 @@ public class ApiTestSteps {
     private Response response;
     private final JSONObject requestHeader = new JSONObject();
     private final JSONObject requestBody = new JSONObject();
+
+    private String addedBookISBN;
+
+    @After
+    public void cleanup() {
+        // If token doesn't exist, call to API in test and call to API in cleanup will fail but the item wasn't added
+        // anyway so nothing to clean up.
+        String token = "";
+        if (requestHeader.has("token")) {
+            token = requestHeader.getString("token");
+        }
+
+        // If a book was added during the test, remove all books
+        if (addedBookISBN != null) {
+            RestAssured.given()
+                    .header("Content-Type", "application/json")
+                    .auth().oauth2(token)
+                    .pathParam("userId", userId)
+                    .delete(rootUrl + "/BookStore/v1/Books?UserId={userId}");
+        }
+    }
+
+    public String getToken() {
+        Response response = RestAssured.given()
+                .header("Content-Type", "application/json")
+                .body(new JSONObject()
+                        .put("userName", username)
+                        .put("password", password).toString())
+                .post(rootUrl + "/Account/v1/GenerateToken");
+
+        return response.jsonPath().getString("token");
+    }
 
     @Given("I put a valid username in the body")
     public void iPutAValidUsernameInTheBody() {
@@ -50,57 +86,70 @@ public class ApiTestSteps {
 
     @Given("I have a valid authentication token")
     public void iHaveAValidAuthenticationToken() {
-        Response response = RestAssured.given()
-                .header("Content-Type", "application/json")
-                .body(new JSONObject()
-                        .put("userName", username)
-                        .put("password", password).toString())
-                .post(rootUrl + "/Account/v1/GenerateToken");
-
-        requestHeader.put("token", response.jsonPath().getString("token"));
+        requestHeader.put("token", getToken());
     }
 
-    @Given("the bookstore has no books")
-    public void theBookstoreHasNoBooks() {
-        // This step might require additional setup, such as clearing the bookstore before the test or mocking the API response to simulate a situation where the bookstore has no books.
-        // For example, if there is an endpoint to delete all books:
-        RequestSpecification request = RestAssured.given()
-                .header("Content-Type", "application/json");
-        if (requestHeader.has("token")) {
-            request.auth().oauth2(requestHeader.getString("token"));
-        }
-        response = request.delete(rootUrl + "/BookStore/v1/Books");
-        assertThat(response.getStatusCode(), is(204));
+    @Given("I put a valid userId in the body")
+    public void iPutAValidUserIdInTheBody() {
+        requestBody.put("userId", userId);
     }
 
-    @Given("I put a valid book in the body")
-    public void iPutAValidBookInTheBody() {
+    @Given("I put a book collection in the body with ISBN {string}")
+    public void iPutABookCollectionInTheBodyWithIsbn(String isbn) {
+        List<JSONObject> collectionOfIsbns = new ArrayList<>();
         JSONObject book = new JSONObject();
-        book.put("title", "A valid book title");
-        book.put("author", "A valid author name");
-        requestBody.put("book", book);
+        book.put("isbn", isbn);
+        collectionOfIsbns.add(book);
+        requestBody.put("collectionOfIsbns", collectionOfIsbns);
+
+        // Store the ISBN of the added book for cleanup
+        addedBookISBN = isbn;
     }
 
-    @Given("the book already exists in the bookstore")
-    public void theBookAlreadyExistsInTheBookstore() {
-        // This step might require additional setup, such as creating a book object and adding it to the bookstore before the test or mocking the API response to simulate a situation where the book already exists.
+    @Given("a book with ISBN {string}")
+    public void aBookWithISBN(String isbn) {
+        requestHeader.put("ISBN", isbn);
     }
 
-    @Given("a book exists in the bookstore")
-    public void aBookExistsInTheBookstore() {
-        // This step might require additional setup, such as creating a book object and adding it to the bookstore before the test or mocking the API response to simulate a situation where the book exists.
+    @Given("the book with ISBN {string} exists on my account")
+    public void theBookWithISBNExistsOnMyAccount(String isbn) {
+        String token;
+        if (requestHeader.has("token")) {
+            token = requestHeader.getString("token");
+        } else {
+            token = getToken();
+        }
+
+        List<JSONObject> collectionOfIsbns = new ArrayList<>();
+        JSONObject book = new JSONObject();
+        book.put("isbn", isbn);
+        collectionOfIsbns.add(book);
+
+        RestAssured.given()
+                .header("Content-Type", "application/json")
+                .auth().oauth2(token)
+                .body(new JSONObject()
+                        .put("userId", userId)
+                        .put("collectionOfIsbns", collectionOfIsbns).toString())
+                .post(rootUrl + "/BookStore/v1/Books/");
+
+        // Store the ISBN of the added book for cleanup
+        addedBookISBN = isbn;
     }
 
-    @Given("a book with ISBN exists in the bookstore")
-    public void aBookWithISBNExistsInTheBookstore() {
-        // This step might require additional setup, such as creating a book object and adding it to the bookstore before the test or mocking the API response to simulate a situation where the book exists.
+    @Given("I put a book in the body with ISBN {string}")
+    public void iPutABookInTheBodyWithIsbn(String isbn) {
+        requestBody.put("isbn", isbn);
     }
 
     @When("I make a POST request to {string}")
-    public void iMakeAPostRequestTo(String url) {
+    public void iMakeAPOSTRequestTo(String url) {
         RequestSpecification request = RestAssured.given()
                 .header("Content-Type", "application/json")
                 .body(requestBody.toString());
+        if (requestHeader.has("token")) {
+            request.auth().oauth2(requestHeader.getString("token"));
+        }
         response = request.post(rootUrl + url);
     }
 
@@ -113,6 +162,9 @@ public class ApiTestSteps {
         }
         if (requestHeader.has("userId")) {
             request.pathParam("userId", requestHeader.getString("userId"));
+        }
+        if (requestHeader.has("ISBN")) {
+            request.pathParam("ISBN", requestHeader.getString("ISBN"));
         }
         response = request.get(rootUrl + url);
     }
@@ -134,12 +186,13 @@ public class ApiTestSteps {
     @When("I make a DELETE request to {string}")
     public void iMakeADELETERequestTo(String url) {
         RequestSpecification request = RestAssured.given()
-                .header("Content-Type", "application/json");
+                .header("Content-Type", "application/json")
+                .body(requestBody.toString());
         if (requestHeader.has("token")) {
             request.auth().oauth2(requestHeader.getString("token"));
         }
-        if (requestHeader.has("ISBN")) {
-            request.pathParam("ISBN", requestHeader.getString("ISBN"));
+        if (requestHeader.has("userId")) {
+            request.pathParam("userId", requestHeader.getString("userId"));
         }
         response = request.delete(rootUrl + url);
     }

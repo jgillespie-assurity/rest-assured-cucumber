@@ -29,6 +29,13 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file pom.xml
-
+    - name: Create env file
+      run: |
+          touch .env
+          echo USERNAME=${{ secrets.USERNAME }} >> .env
+          echo PASSWORD=${{ secrets.PASSWORD }} >> .env
+          echo USER_ID=${{ secrets.USER_ID }} >> .env
+          echo TEMP_USERNAME=${{ secrets.TEMP_USERNAME }} >> .env
+          cat .env
     - name: Test with Maven
       run: mvn test
